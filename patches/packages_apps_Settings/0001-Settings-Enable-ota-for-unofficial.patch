@@ -1,0 +1,49 @@
+From faef0e84277ea26b446c7f5b765b407cb1e61e10 Mon Sep 17 00:00:00 2001
+From: raysenlau <raysen@live.cn>
+Date: Sat, 25 Jul 2020 13:40:23 +0800
+Subject: [PATCH] Settings: Enable ota for unofficial
+
+Change-Id: I3ba42a04efef2a8868d85507fc5d155e73d04890
+---
+ .../SystemUpdatePreferenceController.java      | 18 ++++--------------
+ 1 file changed, 4 insertions(+), 14 deletions(-)
+
+diff --git a/src/com/android/settings/system/SystemUpdatePreferenceController.java b/src/com/android/settings/system/SystemUpdatePreferenceController.java
+index d6803614c8..400d1c73c9 100644
+--- a/src/com/android/settings/system/SystemUpdatePreferenceController.java
++++ b/src/com/android/settings/system/SystemUpdatePreferenceController.java
+@@ -34,9 +34,6 @@ public class SystemUpdatePreferenceController extends BasePreferenceController {
+ 
+     private static final String KEY_SYSTEM_UPDATE_SETTINGS = "system_update_settings";
+ 
+-    private static final String OTA_BUILD_TYPE_PROP = "org.pixelexperience.build_type";
+-    private static final String OTA_APP_PACKAGE = "org.pixelexperience.ota";
+-
+     private final UserManager mUm;
+ 
+     public SystemUpdatePreferenceController(Context context) {
+@@ -46,17 +43,10 @@ public class SystemUpdatePreferenceController extends BasePreferenceController {
+ 
+     @Override
+     public int getAvailabilityStatus() {
+-        String buildtype = SystemProperties.get(OTA_BUILD_TYPE_PROP,"unofficial");
+-        if (!mUm.isAdminUser() || !buildtype.equalsIgnoreCase("official")){
+-            return UNSUPPORTED_ON_DEVICE;
+-        }
+-        try {
+-            PackageManager pm = mContext.getPackageManager();
+-            pm.getPackageInfo(OTA_APP_PACKAGE, PackageManager.GET_ACTIVITIES);
+-        } catch (Exception e) {
+-            return UNSUPPORTED_ON_DEVICE;
+-        }
+-        return AVAILABLE;
++        return mContext.getResources().getBoolean(R.bool.config_show_system_update_settings)
++                && mUm.isAdminUser()
++                ? AVAILABLE
++                : UNSUPPORTED_ON_DEVICE;
+     }
+ 
+     @Override
+-- 
+2.27.0
+
