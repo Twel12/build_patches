@@ -2,6 +2,6 @@
 
 ```bash
 cd aosp
-git clone https://github.com/raysenlau/build_patches.git patches
+git clone https://github.com/Twel12/build_patches.git patches
 
 ```
