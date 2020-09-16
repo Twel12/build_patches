@@ -1,0 +1,28 @@
+From 4c27f8602346f305b487c489141845e4239bf200 Mon Sep 17 00:00:00 2001
+From: Twel12 <shivansh.aeyron@gmail.com>
+Date: Sat, 29 Aug 2020 21:47:00 +0530
+Subject: [PATCH] Track StitchImage
+
+Change-Id: I6282f440cfdda38a20224fdc63ba9ae67917ffab
+---
+ config/common.mk | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/config/common.mk b/config/common.mk
+index 41984be..8845672 100644
+--- a/config/common.mk
++++ b/config/common.mk
+@@ -142,6 +142,10 @@ PRODUCT_PACKAGES += \
+ PRODUCT_PACKAGES += \
+     Recorder
+ 
++# Long Screenshot
++PRODUCT_PACKAGES += \
++    StitchImage
++
+ # Face Unlock
+ TARGET_FACE_UNLOCK_SUPPORTED := false
+ ifeq ($(TARGET_GAPPS_ARCH),arm64)
+-- 
+2.17.1
+

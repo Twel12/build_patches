@@ -1,0 +1,26 @@
+From 4ba0d1a32e69eeb7bae3cd61afb064ca002f2ff6 Mon Sep 17 00:00:00 2001
+From: Twel12 <shivansh.aeyron@gmail.com>
+Date: Sat, 15 Aug 2020 21:48:17 +0530
+Subject: [PATCH] Fix Branding
+
+Change-Id: I8ce019fca688a0e19929b671e5a0bb11735ca662
+---
+ config/branding.mk | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/config/branding.mk b/config/branding.mk
+index 490df51..e296fe3 100644
+--- a/config/branding.mk
++++ b/config/branding.mk
+@@ -13,7 +13,7 @@ CUSTOM_PLATFORM_VERSION := 10.0
+ 
+ TARGET_PRODUCT_SHORT := $(subst aosp_,,$(CUSTOM_BUILD))
+ 
+-CUSTOM_VERSION := PixelExperience_$(CUSTOM_BUILD)-$(CUSTOM_PLATFORM_VERSION)-$(CUSTOM_BUILD_DATE)-$(CUSTOM_BUILD_TYPE)
++CUSTOM_VERSION := PixelOS_$(CUSTOM_BUILD)-$(CUSTOM_PLATFORM_VERSION)-$(CUSTOM_BUILD_DATE)
+ CUSTOM_VERSION_PROP := ten
+ 
+ CUSTOM_PROPERTIES := \
+-- 
+2.17.1
+
