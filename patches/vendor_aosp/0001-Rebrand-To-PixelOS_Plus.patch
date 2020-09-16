@@ -1,0 +1,26 @@
+From 8cc64c8490a39089103ff978241f79a788d58481 Mon Sep 17 00:00:00 2001
+From: Twel12 <shivansh.aeyron@gmail.com>
+Date: Sun, 4 Oct 2020 09:26:40 +0530
+Subject: [PATCH] Rebrand To PixelOS_Plus
+
+Change-Id: I75c4a74263f519cd4c1314a66fb89d74146ed26e
+---
+ config/branding.mk | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/config/branding.mk b/config/branding.mk
+index 281e1ea..3192d83 100644
+--- a/config/branding.mk
++++ b/config/branding.mk
+@@ -13,7 +13,7 @@ CUSTOM_PLATFORM_VERSION := 10.0
+ 
+ TARGET_PRODUCT_SHORT := $(subst aosp_,,$(CUSTOM_BUILD))
+ 
+-CUSTOM_VERSION := PixelExperience_Plus_$(CUSTOM_BUILD)-$(CUSTOM_PLATFORM_VERSION)-$(CUSTOM_BUILD_DATE)-$(CUSTOM_BUILD_TYPE)
++CUSTOM_VERSION := PixelOS_Plus_$(CUSTOM_BUILD)-$(CUSTOM_PLATFORM_VERSION)-$(CUSTOM_BUILD_DATE)
+ CUSTOM_VERSION_PROP := ten_plus
+ 
+ CUSTOM_PROPERTIES := \
+-- 
+2.17.1
+

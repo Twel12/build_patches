@@ -1,0 +1,56 @@
+From 9ed7b5cfd9455393bca213574564434cf2740461 Mon Sep 17 00:00:00 2001
+From: Twel12 <shivansh.aeyron@gmail.com>
+Date: Wed, 19 Aug 2020 15:43:56 +0530
+Subject: [PATCH] adapt to PixelOS
+
+Change-Id: Idfd66825ad657dc99e8240d68cfdf74f31b3c54b
+---
+ tools/releasetools/edify_generator.py       | 8 ++++----
+ tools/releasetools/ota_from_target_files.py | 4 ++--
+ 2 files changed, 6 insertions(+), 6 deletions(-)
+
+diff --git a/tools/releasetools/edify_generator.py b/tools/releasetools/edify_generator.py
+index a9a3f63..bb0ba7c 100644
+--- a/tools/releasetools/edify_generator.py
++++ b/tools/releasetools/edify_generator.py
+@@ -249,11 +249,11 @@ class EdifyGenerator(object):
+                                   prev_build_date=None, prev_security_patch=None):
+     self.Print("----------------------------------------------")
+     if is_plus:
+-      self.Print("        PixelExperience (Plus edition)")
+-      self.Print("                by jhenrique09")
++      self.Print(" PixelOS")
++      self.Print(" by <Twel12/>")
+     else:
+-      self.Print("              PixelExperience")
+-      self.Print("              by jhenrique09")
++      self.Print(" PixelOS")
++      self.Print(" by <Twel12/>")
+     self.Print("----------------------------------------------")
+     self.Print(" Android version: %s"%(android_version))
+     if prev_build_id != None and prev_build_id != build_id:
+diff --git a/tools/releasetools/ota_from_target_files.py b/tools/releasetools/ota_from_target_files.py
+index 8531948..8227c22 100755
+--- a/tools/releasetools/ota_from_target_files.py
++++ b/tools/releasetools/ota_from_target_files.py
+@@ -1652,7 +1652,7 @@ def WriteBlockIncrementalOTAPackage(target_zip, source_zip, output_file):
+   script.RunMountAll()
+ 
+   source_version = os.path.splitext(os.path.basename(OPTIONS.incremental_source))[0]
+-  error_msg = "Failed to apply update, please download full package at https://download.pixelexperience.org/" + device
++  error_msg = "Failed to apply update, please download full package at t.me/CatPower12"
+   script.AddPixelExperienceVersionAssertion(error_msg, source_version)
+ 
+   # Check the required cache size (i.e. stashed blocks).
+@@ -1824,7 +1824,7 @@ def WriteFileIncrementalOTAPackage(target_zip, source_zip, output_file):
+   script.RunMountAll()
+ 
+   source_version = os.path.splitext(os.path.basename(OPTIONS.incremental_source))[0]
+-  error_msg = "Failed to apply update, please download full package at https://download.pixelexperience.org/" + device
++  error_msg = "Failed to apply update, please download full package at t.me/CatPower12"
+   script.AddPixelExperienceVersionAssertion(error_msg, source_version)
+ 
+   device_specific.IncrementalOTA_VerifyEnd()
+-- 
+2.17.1
+

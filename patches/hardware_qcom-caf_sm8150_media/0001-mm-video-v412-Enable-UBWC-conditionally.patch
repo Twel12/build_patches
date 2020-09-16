@@ -1,0 +1,47 @@
+From 996206067e1af8be8a04ab670f743117b275ce19 Mon Sep 17 00:00:00 2001
+From: Hangyu Kuang <hkuang@google.com>
+Date: Thu, 28 Mar 2019 15:30:59 -0700
+Subject: [PATCH] mm-video-v412: Enable UBWC conditionally.
+
+Bug: 129353499
+Test: Camera recording.
+Fixes: Camera recording with API V2 enabled on davinci.
+Change-Id: Iffd91a5217a6c74e378ee5cc6b70a8e3dec7b21e
+---
+ mm-video-v4l2/vidc/venc/Android.mk                        | 4 ++++
+ mm-video-v4l2/vidc/venc/src/video_encoder_device_v4l2.cpp | 2 ++
+ 2 files changed, 6 insertions(+)
+
+diff --git a/mm-video-v4l2/vidc/venc/Android.mk b/mm-video-v4l2/vidc/venc/Android.mk
+index 2ddd99c8..7ce14d01 100644
+--- a/mm-video-v4l2/vidc/venc/Android.mk
++++ b/mm-video-v4l2/vidc/venc/Android.mk
+@@ -38,6 +38,10 @@ endif
+ 
+ libmm-venc-def += -D_UBWC_
+ 
++ifeq ($(TARGET_DISABLED_UBWC),true)
++libmm-venc-def += -DDISABLE_UBWC
++endif
++
+ ifeq ($(call is-board-platform-in-list, $(TARGETS_THAT_SUPPORT_VQZIP)),true)
+ libmm-venc-def += -D_VQZIP_
+ endif
+diff --git a/mm-video-v4l2/vidc/venc/src/video_encoder_device_v4l2.cpp b/mm-video-v4l2/vidc/venc/src/video_encoder_device_v4l2.cpp
+index 26fa9259..ad6d72e9 100755
+--- a/mm-video-v4l2/vidc/venc/src/video_encoder_device_v4l2.cpp
++++ b/mm-video-v4l2/vidc/venc/src/video_encoder_device_v4l2.cpp
+@@ -7250,8 +7250,10 @@ void venc_dev::venc_get_consumer_usage(OMX_U32* usage) {
+     /* Initialize to zero & update as per required color format */
+     *usage = 0;
+ 
++#ifndef DISABLE_UBWC
+     /* Configure UBWC as default */
+     *usage |= GRALLOC_USAGE_PRIVATE_ALLOC_UBWC;
++#endif
+ 
+     if (hevc && eProfile == (OMX_U32)OMX_VIDEO_HEVCProfileMain10HDR10) {
+         DEBUG_PRINT_INFO("Setting 10-bit consumer usage bits");
+-- 
+2.17.1
+
