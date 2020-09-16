@@ -1,0 +1,48 @@
+From 110a702d7acf8ef828f0223abb010acb3327d02b Mon Sep 17 00:00:00 2001
+From: Arian <arian.kulmer@web.de>
+Date: Thu, 6 Aug 2020 18:21:05 +0200
+Subject: [PATCH] hw_info: Add a flag for mono speaker
+
+* On some devices the sound card supports stereo speakers
+  but the OEM decided to use just one speaker.
+
+Change-Id: I93dc3bb86b2853a4203e553d1e73d15570ce52da
+---
+ hal/Android.mk        | 4 ++++
+ hal/msm8974/hw_info.c | 4 ++++
+ 2 files changed, 8 insertions(+)
+
+diff --git a/hal/Android.mk b/hal/Android.mk
+index c2159f545..9fd822c1f 100644
+--- a/hal/Android.mk
++++ b/hal/Android.mk
+@@ -376,6 +376,10 @@ ifeq ($(strip $(AUDIO_FEATURE_ENABLED_FM_TUNER_EXT)),true)
+     LOCAL_CFLAGS += -DFM_TUNER_EXT_ENABLED
+ endif
+ 
++ifeq ($(strip $(TARGET_HAS_MONO_SPEAKER)),true)
++    LOCAL_CFLAGS += -DMONO_SPEAKER
++endif
++
+ LOCAL_MODULE := audio.primary.$(TARGET_BOARD_PLATFORM)
+ 
+ LOCAL_MODULE_RELATIVE_PATH := hw
+diff --git a/hal/msm8974/hw_info.c b/hal/msm8974/hw_info.c
+index 709c69cb3..0692bbd28 100644
+--- a/hal/msm8974/hw_info.c
++++ b/hal/msm8974/hw_info.c
+@@ -767,7 +767,11 @@ void *hw_info_init(const char *snd_card_name)
+ 
+     hw_info->snd_devices = NULL;
+     hw_info->num_snd_devices = 0;
++#ifdef MONO_SPEAKER
++    hw_info->is_stereo_spkr = false;
++#else
+     hw_info->is_stereo_spkr = true;
++#endif
+     hw_info->is_wsa_combo_suppported = false;
+     strlcpy(hw_info->dev_extn, "", sizeof(hw_info->dev_extn));
+     strlcpy(hw_info->type, "", sizeof(hw_info->type));
+-- 
+2.17.1
+
