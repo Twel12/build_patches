@@ -1,0 +1,241 @@
+From 33a6b9bbf52a246567466a3bc5eff5c00bd288ca Mon Sep 17 00:00:00 2001
+From: Arian <arian.kulmer@web.de>
+Date: Fri, 9 Oct 2020 17:51:02 +0200
+Subject: [PATCH] power: Handle launch and interaction hints for sm6150
+
+Author: BeYkeRYkt <beykerykt@gmail.com>
+Date:   Thu Dec 13 06:42:35 2018 +0900
+
+    power: Handle launch and interaction hints for perf HAL platforms
+
+     * MP-CTL does not handle POWER_HINT_INTERACTION and POWER_HINT_LAUNCH
+       directly. Requests for processing are sent by Qualcomm BoostFramework
+       (QPerformance) at the framework service level. Since we do not have
+       BoostFramework, process POWER_HINT_INTERACTION and POWER_HINT_LAUNCH
+       in PowerHAL to ensure a sufficient level of performance.
+     * For proper operation, perfboostsconfig.xml file is required.
+
+    Change-Id: I4c67d886c9dd74ae07094d32bdffc8ef403e04e7
+
+Author: tomascus <arbiter1000@gmail.com>
+Date:   Wed Feb 13 14:42:27 2019 +1100
+
+    power: don't use SCROLL_PREFILING
+
+    The current use of the SCROLL_PREFILING hint hurts scroll performance
+    and results in a lot of dropped frames.
+
+    The hint ID corresponding to SCROLL_PREFILING only takes into effect for
+    a default timeout value of 80 ms (as found in perfboostsconfig.xml),
+    while the duration value in the process_interaction_hint function runs
+    for a much longer time, from 1500 ms up to 5000 ms (bounds of
+    kMinFlingDuration and kMaxInteractiveDuration). During the period
+    of time, when the timeout value has elapsed and current time is less
+    than duration, another interaction hint cannot be processed. Therefore,
+    if the user decides to scroll during this period, high frame drops can be
+    experienced as the CPU freq isn't raised by processing another hint to
+    account for this additional scrolling.
+    By only using SCROLL_VERTICAL, fluidity can be maintained, improving user
+    experience.
+
+    Furthmore, kMinInteractiveDuration has been lowered to 400 ms for some
+    platforms as it is more than sufficient to maintain fluidity (minimal
+    frames dropped) while scrolling.
+
+    Change-Id: I42edd07a67c7dca43a10ae2fa1b44b64b7794b43
+
+Author: tomascus <arbiter1000@gmail.com>
+Date:   Tue Feb 19 17:15:58 2019 +1100
+
+    power: Release launch boost perflock when launch is completed
+
+    Currently, the launch boost perflock is held for a fixed duration, either
+    specified in perfboostsconfig.xml for perf HAL platforms or hardcoded in the
+    powerHAL for non-perf HAL platforms.
+
+    Using a fixed duration for this perflock has two shortcomings:
+    * perflock can be held for too long, causing the CPU freq and other resources
+      to be boosted for too long even if the application has finished launching,
+      resulting in excessive battery drainage
+    * perflock can be held not long enough if it takes more than the timeout
+      time to finish launch
+
+    The framework sends out a powerhint for both when launch starts and when
+    launch ends. The launch finish hint can be used to signal when to release the
+    perflock.
+
+    Reference: Wahoo power-libperfmgr
+
+    Change-Id: I405cc453c5f58d9fb2583b9c6017f3964a0ce024
+
+Author: dianlujitao <dianlujitao@lineageos.org>
+Date:   Fri Jun 26 11:19:30 2020 +0800
+
+    power: Ignore interaction boost sequence in a short period
+
+     * When slowly, but continuously scrolling, a sequence of zero duration
+       boosts are fired by the framework. They quickly fill up the internal
+       limitation of MPCTL, as a result all incoming boosts get ignored.
+     * Fixing the following logspam:
+        ANDR-PERF-MPCTL: Active req limit reached, No optimizations performed
+     * This restores cm-14.1 behavior.
+
+    Change-Id: I977e844935539a4598a749c77f4c0934ca93a2b7
+
+Change-Id: I2ca702557e1015414379b2086d9f50725821f37c
+---
+ Android.mk   |   4 ++
+ power-6150.c | 126 +++++++++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 130 insertions(+)
+ create mode 100644 power-6150.c
+
+diff --git a/Android.mk b/Android.mk
+index 82dbf06..1032291 100644
+--- a/Android.mk
++++ b/Android.mk
+@@ -112,6 +112,10 @@ ifeq ($(call is-board-platform-in-list,msmnile), true)
+ LOCAL_SRC_FILES += power-msmnile.c
+ endif
+ 
++ifeq ($(call is-board-platform-in-list,sm6150), true)
++LOCAL_SRC_FILES += power-6150.c
++endif
++
+ endif # End of board specific list
+ 
+ ifneq ($(TARGET_POWER_SET_FEATURE_LIB),)
+diff --git a/power-6150.c b/power-6150.c
+new file mode 100644
+index 0000000..fdffa7b
+--- /dev/null
++++ b/power-6150.c
+@@ -0,0 +1,126 @@
++/*
++ * Copyright (C) 2020 The LineageOS Project
++ *
++ * Redistribution and use in source and binary forms, with or without
++ * modification, are permitted provided that the following conditions are
++ * met:
++ * *    * Redistributions of source code must retain the above copyright
++ *       notice, this list of conditions and the following disclaimer.
++ *     * Redistributions in binary form must reproduce the above
++ *       copyright notice, this list of conditions and the following
++ *       disclaimer in the documentation and/or other materials provided
++ *       with the distribution.
++ *     * Neither the name of The Linux Foundation nor the names of its
++ *       contributors may be used to endorse or promote products derived
++ *       from this software without specific prior written permission.
++ *
++ * THIS SOFTWARE IS PROVIDED "AS IS" AND ANY EXPRESS OR IMPLIED
++ * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
++ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT
++ * ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS
++ * BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
++ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
++ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR
++ * BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
++ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
++ * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
++ * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++ */
++
++#define LOG_TAG "QTI PowerHAL"
++#define LOG_NIDEBUG 0
++
++#include <log/log.h>
++#include <time.h>
++
++#include "performance.h"
++#include "power-common.h"
++#include "utils.h"
++
++const int kMinInteractiveDuration = 100;  /* ms */
++const int kMaxInteractiveDuration = 5000; /* ms */
++const int kMaxLaunchDuration = 5000;      /* ms */
++
++static int process_interaction_hint(void* data) {
++    static struct timespec s_previous_boost_timespec;
++    static int s_previous_duration = 0;
++    static int interaction_handle = -1;
++
++    struct timespec cur_boost_timespec;
++    long long elapsed_time;
++    int duration = kMinInteractiveDuration;
++
++    if (data) {
++        int input_duration = *((int*)data);
++        if (input_duration > duration) {
++            duration = (input_duration > kMaxInteractiveDuration) ? kMaxInteractiveDuration
++                                                                  : input_duration;
++        }
++    }
++
++    clock_gettime(CLOCK_MONOTONIC, &cur_boost_timespec);
++
++    elapsed_time = calc_timespan_us(s_previous_boost_timespec, cur_boost_timespec);
++    // don't hint if it's been less than 250ms since last boost
++    // also detect if we're doing anything resembling a fling
++    // support additional boosting in case of flings
++    if (elapsed_time < 250000 && duration <= 750) {
++        return HINT_HANDLED;
++    }
++    s_previous_boost_timespec = cur_boost_timespec;
++    s_previous_duration = duration;
++
++    interaction_handle = perf_hint_enable_with_type(VENDOR_HINT_SCROLL_BOOST,
++                                                    duration, SCROLL_VERTICAL);
++    if (!CHECK_HANDLE(interaction_handle)) {
++        ALOGE("Failed to perform interaction boost");
++        return HINT_NONE;
++    }
++    return HINT_HANDLED;
++}
++
++static int process_activity_launch_hint(void* data) {
++    static int launch_handle = -1;
++    static int launch_mode = 0;
++
++    // release lock early if launch has finished
++    if (!data) {
++        if (CHECK_HANDLE(launch_handle)) {
++            release_request(launch_handle);
++            launch_handle = -1;
++        }
++        launch_mode = 0;
++        return HINT_HANDLED;
++    }
++
++    if (!launch_mode) {
++        launch_handle = perf_hint_enable_with_type(VENDOR_HINT_FIRST_LAUNCH_BOOST,
++                                                   kMaxLaunchDuration, LAUNCH_BOOST_V1);
++        if (!CHECK_HANDLE(launch_handle)) {
++            ALOGE("Failed to perform launch boost");
++            return HINT_NONE;
++        }
++        launch_mode = 1;
++    }
++    return HINT_HANDLED;
++}
++
++int power_hint_override(power_hint_t hint, void* data) {
++    int ret_val = HINT_NONE;
++
++    switch (hint) {
++        case POWER_HINT_INTERACTION:
++            ret_val = process_interaction_hint(data);
++            break;
++        case POWER_HINT_LAUNCH:
++            ret_val = process_activity_launch_hint(data);
++            break;
++        default:
++            break;
++    }
++    return ret_val;
++}
++
++int set_interactive_override(int UNUSED(on)) {
++    return HINT_HANDLED; /* Don't excecute this code path, not in use */
++}
+-- 
+2.20.1
+
