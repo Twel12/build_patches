@@ -1,4 +1,4 @@
-From 5aea591c2cd5ff90305d29c210ea2f3fd445022b Mon Sep 17 00:00:00 2001
+From ef412227059f5d5d5f4b302e74cbfba9078ae785 Mon Sep 17 00:00:00 2001
 From: Arian <arian.kulmer@web.de>
 Date: Mon, 17 Aug 2020 17:37:31 +0200
 Subject: [PATCH] hal: msm8974: Allow to set headset and bt-sco-headset echo
@@ -10,7 +10,7 @@ Change-Id: I23efff0fb40cb9944b1d9a40e4e053707e8c873b
  1 file changed, 6 insertions(+)
 
 diff --git a/hal/msm8974/platform.c b/hal/msm8974/platform.c
-index 7ab28115..9e4f9b42 100644
+index 7ab281154..9e4f9b42e 100644
 --- a/hal/msm8974/platform.c
 +++ b/hal/msm8974/platform.c
 @@ -1855,6 +1855,12 @@ void platform_set_echo_reference(struct audio_device *adev, bool enable,

@@ -1,4 +1,4 @@
-From 3c51355a7df5d34a1df2ecb6ffefe867edde4fc2 Mon Sep 17 00:00:00 2001
+From 14f9ab325352a558fa5f849507245d9f26334a13 Mon Sep 17 00:00:00 2001
 From: Pig <pig.priv@gmail.com>
 Date: Tue, 22 Sep 2020 22:00:41 +0800
 Subject: [PATCH] audio_amplifier: Add new hook for setting amp feedback
