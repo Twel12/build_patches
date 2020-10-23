@@ -1,0 +1,45 @@
+From ad851280698f1743686a10c3402d7ff0ca992a61 Mon Sep 17 00:00:00 2001
+From: Twel12 <shivansh.aeyron@gmail.com>
+Date: Fri, 23 Oct 2020 10:13:19 +0530
+Subject: [PATCH] Add SEPOLICY FOR APP LOCK
+
+Signed-off-by: Twel12 <shivansh.aeyron@gmail.com>
+Change-Id: Idf8f2ed3072c40dd4ad976c2161aea90efb2c307
+---
+ common/private/service.te       | 1 +
+ common/private/service_contexts | 1 +
+ common/private/system_server.te | 3 +++
+ 3 files changed, 5 insertions(+)
+
+diff --git a/common/private/service.te b/common/private/service.te
+index 48a12ec..c486e01 100644
+--- a/common/private/service.te
++++ b/common/private/service.te
+@@ -1,3 +1,4 @@
+ type lineage_hardware_service, system_api_service, system_server_service, service_manager_type;
+ type lineage_livedisplay_service, system_api_service, system_server_service, service_manager_type;
+ type pocket_service, system_api_service, system_server_service, service_manager_type;
++type applock_service, system_api_service, system_server_service, service_manager_type;
+diff --git a/common/private/service_contexts b/common/private/service_contexts
+index c26fb91..3025ca1 100644
+--- a/common/private/service_contexts
++++ b/common/private/service_contexts
+@@ -1,3 +1,4 @@
+ lineagehardware                           u:object_r:lineage_hardware_service:s0
+ lineagelivedisplay                        u:object_r:lineage_livedisplay_service:s0
+ pocket                                    u:object_r:pocket_service:s0
++applock					  u:object_r:applock_service:s0
+diff --git a/common/private/system_server.te b/common/private/system_server.te
+index d92c7a0..b07aac2 100644
+--- a/common/private/system_server.te
++++ b/common/private/system_server.te
+@@ -11,3 +11,6 @@ allow system_server pocket_service:service_manager { add find };
+ allow system_server pocket_judge_sysfs:dir search;
+ allow system_server pocket_judge_sysfs:file rw_file_perms;
+ allow system_server pocket_service:service_manager { add find };
++
++#App lock
++add_service(system_server, applock_service);
+-- 
+2.17.1
+
