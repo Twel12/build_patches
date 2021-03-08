@@ -1,0 +1,253 @@
+From a38af534a48d8c031610acb41e7f1ac0f75a9816 Mon Sep 17 00:00:00 2001
+From: Twel12 <shivansh.aeyron@gmail.com>
+Date: Mon, 8 Mar 2021 10:48:47 +0530
+Subject: [PATCH] Revert "Add package name when creating AudioTrack."
+
+This reverts commit fcd4cbf4f42e2bb3fad7e3a8a8db71dc8981d134.
+---
+ core/jni/android_media_AudioTrack.cpp     | 76 +++++++++++------------
+ media/java/android/media/AudioTrack.java  |  9 +--
+ media/java/android/media/MediaPlayer.java |  5 +-
+ media/java/android/media/PlayerBase.java  |  5 --
+ media/jni/android_media_MediaPlayer.cpp   |  9 +--
+ 5 files changed, 44 insertions(+), 60 deletions(-)
+
+diff --git a/core/jni/android_media_AudioTrack.cpp b/core/jni/android_media_AudioTrack.cpp
+index 7a5c38385f3..5c045b65be2 100644
+--- a/core/jni/android_media_AudioTrack.cpp
++++ b/core/jni/android_media_AudioTrack.cpp
+@@ -20,7 +20,6 @@
+ #include "android_media_AudioTrack.h"
+ 
+ #include <nativehelper/JNIHelp.h>
+-#include <nativehelper/ScopedUtfChars.h>
+ #include "core_jni_helpers.h"
+ 
+ #include <utils/Log.h>
+@@ -252,7 +251,7 @@ static jint android_media_AudioTrack_setup(JNIEnv *env, jobject thiz, jobject we
+                                            jint audioFormat, jint buffSizeInBytes, jint memoryMode,
+                                            jintArray jSession, jlong nativeAudioTrack,
+                                            jboolean offload, jint encapsulationMode,
+-                                           jobject tunerConfiguration, jstring opPackageName) {
++                                           jobject tunerConfiguration) {
+     ALOGV("sampleRates=%p, channel mask=%x, index mask=%x, audioFormat(Java)=%d, buffSize=%d,"
+           " nativeAudioTrack=0x%" PRIX64 ", offload=%d encapsulationMode=%d tuner=%p",
+           jSampleRate, channelPositionMask, channelIndexMask, audioFormat, buffSizeInBytes,
+@@ -338,8 +337,7 @@ static jint android_media_AudioTrack_setup(JNIEnv *env, jobject thiz, jobject we
+         }
+ 
+         // create the native AudioTrack object
+-        ScopedUtfChars opPackageNameStr(env, opPackageName);
+-        lpTrack = new AudioTrack(opPackageNameStr.c_str());
++        lpTrack = new AudioTrack();
+ 
+         // read the AudioAttributes values
+         auto paa = JNIAudioAttributeHelper::makeUnique();
+@@ -373,24 +371,23 @@ static jint android_media_AudioTrack_setup(JNIEnv *env, jobject thiz, jobject we
+         status_t status = NO_ERROR;
+         switch (memoryMode) {
+         case MODE_STREAM:
+-            status = lpTrack->set(AUDIO_STREAM_DEFAULT, // stream type, but more info conveyed
+-                                                        // in paa (last argument)
+-                                  sampleRateInHertz,
+-                                  format, // word length, PCM
+-                                  nativeChannelMask, offload ? 0 : frameCount,
+-                                  offload ? AUDIO_OUTPUT_FLAG_COMPRESS_OFFLOAD
+-                                          : AUDIO_OUTPUT_FLAG_NONE,
+-                                  audioCallback,
+-                                  &(lpJniStorage->mCallbackData), // callback, callback data (user)
+-                                  0,    // notificationFrames == 0 since not using EVENT_MORE_DATA
+-                                        // to feed the AudioTrack
+-                                  0,    // shared mem
+-                                  true, // thread can call Java
+-                                  sessionId, // audio session ID
+-                                  offload ? AudioTrack::TRANSFER_SYNC_NOTIF_CALLBACK
+-                                          : AudioTrack::TRANSFER_SYNC,
+-                                  offload ? &offloadInfo : NULL, -1, -1, // default uid, pid values
+-                                  paa.get());
++            status = lpTrack->set(
++                    AUDIO_STREAM_DEFAULT,// stream type, but more info conveyed in paa (last argument)
++                    sampleRateInHertz,
++                    format,// word length, PCM
++                    nativeChannelMask,
++                    offload ? 0 : frameCount,
++                    offload ? AUDIO_OUTPUT_FLAG_COMPRESS_OFFLOAD : AUDIO_OUTPUT_FLAG_NONE,
++                    audioCallback, &(lpJniStorage->mCallbackData),//callback, callback data (user)
++                    0,// notificationFrames == 0 since not using EVENT_MORE_DATA to feed the AudioTrack
++                    0,// shared mem
++                    true,// thread can call Java
++                    sessionId,// audio session ID
++                    offload ? AudioTrack::TRANSFER_SYNC_NOTIF_CALLBACK : AudioTrack::TRANSFER_SYNC,
++                    offload ? &offloadInfo : NULL,
++                    -1, -1,                       // default uid, pid values
++                    paa.get());
++
+             break;
+ 
+         case MODE_STATIC:
+@@ -401,22 +398,22 @@ static jint android_media_AudioTrack_setup(JNIEnv *env, jobject thiz, jobject we
+                 goto native_init_failure;
+             }
+ 
+-            status = lpTrack->set(AUDIO_STREAM_DEFAULT, // stream type, but more info conveyed
+-                                                        // in paa (last argument)
+-                                  sampleRateInHertz,
+-                                  format, // word length, PCM
+-                                  nativeChannelMask, frameCount, AUDIO_OUTPUT_FLAG_NONE,
+-                                  audioCallback,
+-                                  &(lpJniStorage->mCallbackData), // callback, callback data (user)
+-                                  0, // notificationFrames == 0 since not using EVENT_MORE_DATA
+-                                     // to feed the AudioTrack
+-                                  lpJniStorage->mMemBase, // shared mem
+-                                  true,                   // thread can call Java
+-                                  sessionId,              // audio session ID
+-                                  AudioTrack::TRANSFER_SHARED,
+-                                  NULL,   // default offloadInfo
+-                                  -1, -1, // default uid, pid values
+-                                  paa.get());
++            status = lpTrack->set(
++                    AUDIO_STREAM_DEFAULT,// stream type, but more info conveyed in paa (last argument)
++                    sampleRateInHertz,
++                    format,// word length, PCM
++                    nativeChannelMask,
++                    frameCount,
++                    AUDIO_OUTPUT_FLAG_NONE,
++                    audioCallback, &(lpJniStorage->mCallbackData),//callback, callback data (user));
++                    0,// notificationFrames == 0 since not using EVENT_MORE_DATA to feed the AudioTrack
++                    lpJniStorage->mMemBase,// shared mem
++                    true,// thread can call Java
++                    sessionId,// audio session ID
++                    AudioTrack::TRANSFER_SHARED,
++                    NULL,                         // default offloadInfo
++                    -1, -1,                       // default uid, pid values
++                    paa.get());
+             break;
+ 
+         default:
+@@ -1431,8 +1428,7 @@ static const JNINativeMethod gMethods[] = {
+         {"native_stop", "()V", (void *)android_media_AudioTrack_stop},
+         {"native_pause", "()V", (void *)android_media_AudioTrack_pause},
+         {"native_flush", "()V", (void *)android_media_AudioTrack_flush},
+-        {"native_setup",
+-         "(Ljava/lang/Object;Ljava/lang/Object;[IIIIII[IJZILjava/lang/Object;Ljava/lang/String;)I",
++        {"native_setup", "(Ljava/lang/Object;Ljava/lang/Object;[IIIIII[IJZILjava/lang/Object;)I",
+          (void *)android_media_AudioTrack_setup},
+         {"native_finalize", "()V", (void *)android_media_AudioTrack_finalize},
+         {"native_release", "()V", (void *)android_media_AudioTrack_release},
+diff --git a/media/java/android/media/AudioTrack.java b/media/java/android/media/AudioTrack.java
+index de2a7b2c15e..1c0a526f536 100644
+--- a/media/java/android/media/AudioTrack.java
++++ b/media/java/android/media/AudioTrack.java
+@@ -807,8 +807,7 @@ public class AudioTrack extends PlayerBase
+         int initResult = native_setup(new WeakReference<AudioTrack>(this), mAttributes,
+                 sampleRate, mChannelMask, mChannelIndexMask, mAudioFormat,
+                 mNativeBufferSizeInBytes, mDataLoadMode, session, 0 /*nativeTrackInJavaObj*/,
+-                offload, encapsulationMode, tunerConfiguration,
+-                getCurrentOpPackageName());
++                offload, encapsulationMode, tunerConfiguration);
+         if (initResult != SUCCESS) {
+             loge("Error code "+initResult+" when initializing AudioTrack.");
+             return; // with mState == STATE_UNINITIALIZED
+@@ -894,8 +893,7 @@ public class AudioTrack extends PlayerBase
+                     nativeTrackInJavaObj,
+                     false /*offload*/,
+                     ENCAPSULATION_MODE_NONE,
+-                    null /* tunerConfiguration */,
+-                    "" /* opPackagename */);
++                    null /* tunerConfiguration */);
+             if (initResult != SUCCESS) {
+                 loge("Error code "+initResult+" when initializing AudioTrack.");
+                 return; // with mState == STATE_UNINITIALIZED
+@@ -4064,8 +4062,7 @@ public class AudioTrack extends PlayerBase
+             Object /*AudioAttributes*/ attributes,
+             int[] sampleRate, int channelMask, int channelIndexMask, int audioFormat,
+             int buffSizeInBytes, int mode, int[] sessionId, long nativeAudioTrack,
+-            boolean offload, int encapsulationMode, Object tunerConfiguration,
+-            @NonNull String opPackageName);
++            boolean offload, int encapsulationMode, Object tunerConfiguration);
+ 
+     private native final void native_finalize();
+ 
+diff --git a/media/java/android/media/MediaPlayer.java b/media/java/android/media/MediaPlayer.java
+index 36ae3ec75a9..49e41608004 100644
+--- a/media/java/android/media/MediaPlayer.java
++++ b/media/java/android/media/MediaPlayer.java
+@@ -672,8 +672,7 @@ public class MediaPlayer extends PlayerBase
+         /* Native setup requires a weak reference to our object.
+          * It's easier to create it here than in C++.
+          */
+-        native_setup(new WeakReference<MediaPlayer>(this),
+-                getCurrentOpPackageName());
++        native_setup(new WeakReference<MediaPlayer>(this));
+ 
+         baseRegisterPlayer();
+     }
+@@ -2379,7 +2378,7 @@ public class MediaPlayer extends PlayerBase
+     private native final int native_setMetadataFilter(Parcel request);
+ 
+     private static native final void native_init();
+-    private native void native_setup(Object mediaplayerThis, @NonNull String opPackageName);
++    private native final void native_setup(Object mediaplayer_this);
+     private native final void native_finalize();
+ 
+     /**
+diff --git a/media/java/android/media/PlayerBase.java b/media/java/android/media/PlayerBase.java
+index df5e85edbc3..ee8f1b3eec7 100644
+--- a/media/java/android/media/PlayerBase.java
++++ b/media/java/android/media/PlayerBase.java
+@@ -27,7 +27,6 @@ import android.os.Parcelable;
+ import android.os.Process;
+ import android.os.RemoteException;
+ import android.os.ServiceManager;
+-import android.text.TextUtils;
+ import android.util.Log;
+ 
+ import com.android.internal.annotations.GuardedBy;
+@@ -623,8 +622,4 @@ public abstract class PlayerBase {
+         Log.w(className, "See the documentation of " + opName + " for what to use instead with " +
+                 "android.media.AudioAttributes to qualify your playback use case");
+     }
+-
+-    protected String getCurrentOpPackageName() {
+-        return TextUtils.emptyIfNull(ActivityThread.currentOpPackageName());
+-    }
+ }
+diff --git a/media/jni/android_media_MediaPlayer.cpp b/media/jni/android_media_MediaPlayer.cpp
+index 1516c515205..5cb42a9a96c 100644
+--- a/media/jni/android_media_MediaPlayer.cpp
++++ b/media/jni/android_media_MediaPlayer.cpp
+@@ -33,7 +33,6 @@
+ #include <utils/threads.h>
+ #include "jni.h"
+ #include <nativehelper/JNIHelp.h>
+-#include <nativehelper/ScopedUtfChars.h>
+ #include "android_runtime/AndroidRuntime.h"
+ #include "android_runtime/android_view_Surface.h"
+ #include "android_runtime/Log.h"
+@@ -945,12 +944,10 @@ android_media_MediaPlayer_native_init(JNIEnv *env)
+ }
+ 
+ static void
+-android_media_MediaPlayer_native_setup(JNIEnv *env, jobject thiz, jobject weak_this,
+-                                       jstring opPackageName)
++android_media_MediaPlayer_native_setup(JNIEnv *env, jobject thiz, jobject weak_this)
+ {
+     ALOGV("native_setup");
+-    ScopedUtfChars opPackageNameStr(env, opPackageName);
+-    sp<MediaPlayer> mp = new MediaPlayer(opPackageNameStr.c_str());
++    sp<MediaPlayer> mp = new MediaPlayer();
+     if (mp == NULL) {
+         jniThrowException(env, "java/lang/RuntimeException", "Out of memory");
+         return;
+@@ -1406,7 +1403,7 @@ static const JNINativeMethod gMethods[] = {
+     {"native_setMetadataFilter", "(Landroid/os/Parcel;)I",      (void *)android_media_MediaPlayer_setMetadataFilter},
+     {"native_getMetadata", "(ZZLandroid/os/Parcel;)Z",          (void *)android_media_MediaPlayer_getMetadata},
+     {"native_init",         "()V",                              (void *)android_media_MediaPlayer_native_init},
+-    {"native_setup",        "(Ljava/lang/Object;Ljava/lang/String;)V",(void *)android_media_MediaPlayer_native_setup},
++    {"native_setup",        "(Ljava/lang/Object;)V",            (void *)android_media_MediaPlayer_native_setup},
+     {"native_finalize",     "()V",                              (void *)android_media_MediaPlayer_native_finalize},
+     {"getAudioSessionId",   "()I",                              (void *)android_media_MediaPlayer_get_audio_session_id},
+     {"setAudioSessionId",   "(I)V",                             (void *)android_media_MediaPlayer_set_audio_session_id},
+-- 
+2.30.1
+
